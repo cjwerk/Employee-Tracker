@@ -1,4 +1,5 @@
 const inquirer = require('inquirer');
+const Prompt = require('inquirer/lib/prompts/base');
 
 const require = ('inquirer');
 const require = ('mysql2/promise');
@@ -102,6 +103,21 @@ function viewAllEmployees() {
         console.log('\n');
         console.log('VIEW ALL EMPLOYEES');
         console.log('\n');
+        console.table(res);
+        prompt();
+    });
+}
+
+function viewByDepartment () {
+    const query = `SELECT department.name AS department, role.title, employee.id, employee.firest_name, employee.last_name
+    FROM employee
+    LEFT JOIN role ON (role.id = employee.role_id)
+    ORDER BY department.name;`;
+    connection.query(query, (err,res) => {
+        if (err) throw err;
+        console.log('/n');
+        console.log("VIEW EMPLOYEE BY DEPARTMENT");
+        console.log('/n');
         console.table(res);
         prompt();
     });
