@@ -1,5 +1,4 @@
 const inquirer = require("inquirer");
-const Prompt = require("inquirer/lib/prompts/base");
 
 const require = "inquirer";
 const require = "mysql2/promise";
@@ -74,7 +73,7 @@ function prompt() {
           break;
 
         case promptMessages.updateRole:
-          remove("role");
+          updateRole();
           break;
 
         case promptMessages.viewAllRoles:
