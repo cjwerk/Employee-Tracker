@@ -21,3 +21,33 @@ CREATE TABLE employee (
     INDEX role_ind (role_id),
     CONSTRAINT fk_role FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE SET NULL
 );
+use employees;
+INSERT INTO department
+     (name)
+     VALUES
+('Operations'),
+('Analystics'),
+('Marketing'),
+('Executive');
+INSERT INTO role
+(title, salary, department_id)
+VALUES
+('Gereral Manager', 11000000, 1),
+('Coach', 400000, 1),
+('Team Lead Analyst', 15000000, 2),
+('Team Analyst', 8000000, 2),
+('Media Manager', 77000000, 3),
+('Media Specialist', 3000000, 3),
+('CEO', 45000000, 4),
+('CEO Assistant', 25000000, 4);
+INSERT INTO employee
+(first_name, last_name, role_id, manager_id)
+VALUES
+('John', 'Stockton', 1, NULL),
+('Peter', 'Parker', 2, 1),
+('Nacho', 'Libre', 3, NULL),
+('Bob', 'Marley', 4, 3),
+('Jane', 'doe', 5, NULL),
+('Jessica', 'Cruz', 6, 5),
+('Johnny', 'Depp', 7, NULL),
+('Larry', 'Bird', 8, 7);
