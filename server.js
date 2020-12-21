@@ -1,7 +1,7 @@
-const inquirer = require("inquirer");
+"use strict";
 
-const require = "inquirer";
-const require = "mysql2/promise";
+const mysql = require("mysql2/promise");
+const inquirer = require("inquirer");
 require("console.table");
 
 const promptMessages = {
@@ -9,17 +9,17 @@ const promptMessages = {
   viewByDepartment: "View All Employees By Department",
   viewByManager: "View All Employees By Manager",
   addEmployee: "Add An Employee",
-  updateRole: "Update Employee Role",
   removeEmployee: "Remove An Employee",
-  updateEmployeeManager: "Update Employees By Manager",
-  viewAllRoles: "View All Rolls",
+  updateRole: "Update Employee Role",
+  updateEmployeeManager: "Update Employee Manager",
+  viewAllRoles: "View All Roles",
   exit: "Exit",
 };
 
 const connection = mysql.createConnection({
   host: "localhost",
 
-  port: "3306",
+  port: 3306,
 
   user: "root",
 
@@ -73,7 +73,7 @@ function prompt() {
           break;
 
         case promptMessages.updateRole:
-          updateRole();
+          remove("role");
           break;
 
         case promptMessages.viewAllRoles:
@@ -105,15 +105,16 @@ function viewAllEmployees() {
 }
 
 function viewByDepartment() {
-  const query = `SELECT department.name AS department, role.title, employee.id, employee.firest_name, employee.last_name
+  const query = `SELECT department.name AS department, role.title, employee.id, employee.first_name, employee.last_name
     FROM employee
     LEFT JOIN role ON (role.id = employee.role_id)
+    LEFT JOIN department ON (department.id = role.department_id)
     ORDER BY department.name;`;
   connection.query(query, (err, res) => {
     if (err) throw err;
-    console.log("/n");
+    console.log("\n");
     console.log("VIEW EMPLOYEE BY DEPARTMENT");
-    console.log("/n");
+    console.log("\n");
     console.table(res);
     prompt();
   });
@@ -136,10 +137,26 @@ function viewByManager() {
   });
 }
 
+function viewAllRoles() {
+  const query = `SELECT role.title, employee.id, employee.first_name, employee.last_name, department.name AS department
+    FROM employee
+    LEFT JOIN role ON (role.id = employee.role_id)
+    LEFT JOIN department ON (department.id = role.department_id)
+    ORDER BY role.title;`;
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    console.log("\n");
+    console.log("VIEW EMPLOYEE BY ROLE");
+    console.log("\n");
+    console.table(res);
+    prompt();
+  });
+}
+
 async function addEmployee() {
-  const addName = await inquirer.prompt(askName());
+  const addname = await inquirer.prompt(askName());
   connection.query(
-    `SELECT role.id, role.title FROM role ORDER BY role.id;`,
+    "SELECT role.id, role.title FROM role ORDER BY role.id;",
     async (err, res) => {
       if (err) throw err;
       const { role } = await inquirer.prompt([
@@ -147,7 +164,7 @@ async function addEmployee() {
           name: "role",
           type: "list",
           choices: () => res.map((res) => res.title),
-          message: "What is the employee role?:",
+          message: "What is the employee role?: ",
         },
       ]);
       let roleId;
@@ -157,7 +174,7 @@ async function addEmployee() {
           continue;
         }
       }
-      connection.query(`SELECT * FROM employee`, async (err, res) => {
+      connection.query("SELECT * FROM employee", async (err, res) => {
         if (err) throw err;
         let choices = res.map((res) => `${res.first_name} ${res.last_name}`);
         choices.push("none");
@@ -166,12 +183,12 @@ async function addEmployee() {
             name: "manager",
             type: "list",
             choices: choices,
-            message: "Choose the employee Manager:",
+            message: "Choose the employee Manager: ",
           },
         ]);
         let managerId;
         let managerName;
-        if (manager === "name") {
+        if (manager === "none") {
           managerId = null;
         } else {
           for (const data of res) {
@@ -185,13 +202,15 @@ async function addEmployee() {
             }
           }
         }
-        console.log("Employee added, check all employee to verify");
+        console.log(
+          "Employee has been added. Please view all employee to verify..."
+        );
         connection.query(
-          `INSERT INTO employee SET ?`,
+          "INSERT INTO employee SET ?",
           {
-            first_name: addName.first,
-            last_name: addName.last,
-            role_Id: roleId,
+            first_name: addname.first,
+            last_name: addname.last,
+            role_id: roleId,
             manager_id: parseInt(managerId),
           },
           (err, res) => {
@@ -203,22 +222,66 @@ async function addEmployee() {
     }
   );
 }
+function remove(input) {
+  const promptQ = {
+    yes: "yes",
+    no: "no I don't (view all employees on the main option)",
+  };
+  inquirer
+    .prompt([
+      {
+        name: "action",
+        type: "list",
+        message:
+          "In order to proceed an employee, an ID must be entered. View all employees to get" +
+          " the employee ID. Do you know the employee ID?",
+        choices: [promptQ.yes, promptQ.no],
+      },
+    ])
+    .then((answer) => {
+      if (input === "delete" && answer.action === "yes") removeEmployee();
+      else if (input === "role" && answer.action === "yes") updateRole();
+      else viewAllEmployees();
+    });
+}
+
+async function removeEmployee() {
+  const answer = await inquirer.prompt([
+    {
+      name: "first",
+      type: "input",
+      message: "Enter the employee ID you want to remove:  ",
+    },
+  ]);
+
+  connection.query(
+    "DELETE FROM employee WHERE ?",
+    {
+      id: answer.first,
+    },
+    function (err) {
+      if (err) throw err;
+    }
+  );
+  console.log("Employee has been removed on the system!");
+  prompt();
+}
 
 function askId() {
   return [
     {
       name: "name",
       type: "input",
-      message: "What is the employee ID?:",
+      message: "What is the employe ID?:  ",
     },
   ];
 }
 
 async function updateRole() {
-  const employeeID = await inquirer.prompt(askId());
+  const employeeId = await inquirer.prompt(askId());
 
   connection.query(
-    `SELECT role.id, role.title FROM role ORDER BY role.id;`,
+    "SELECT role.id, role.title FROM role ORDER BY role.id;",
     async (err, res) => {
       if (err) throw err;
       const { role } = await inquirer.prompt([
@@ -226,22 +289,23 @@ async function updateRole() {
           name: "role",
           type: "list",
           choices: () => res.map((res) => res.title),
-          message: "What is the new employee role?:",
+          message: "What is the new employee role?: ",
         },
       ]);
-
       let roleId;
       for (const row of res) {
         if (row.title === role) {
-          roleId = role.id;
+          roleId = row.id;
           continue;
         }
       }
       connection.query(
-        `UPDATE employee SET role_id = ${roleId} WHERE employe.id = ${employeeID.name}`,
+        `UPDATE employee 
+        SET role_id = ${roleId}
+        WHERE employee.id = ${employeeId.name}`,
         async (err, res) => {
           if (err) throw err;
-          console.log("Role has been updated");
+          console.log("Role has been updated..");
           prompt();
         }
       );
@@ -254,12 +318,12 @@ function askName() {
     {
       name: "first",
       type: "input",
-      message: "Enter the first name:",
+      message: "Enter the first name: ",
     },
     {
       name: "last",
       type: "input",
-      message: "Enter the last name:",
+      message: "Enter the last name: ",
     },
   ];
 }
