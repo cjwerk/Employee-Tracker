@@ -1,6 +1,4 @@
-"use strict";
-
-const mysql = require("mysql2/promise");
+const mysql = require("mysql2");
 const inquirer = require("inquirer");
 require("console.table");
 
@@ -27,7 +25,7 @@ const connection = mysql.createConnection({
   database: "employees",
 });
 
-connection.connect((err) => {
+connection.connect(function (err) {
   if (err) throw err;
   prompt();
 });
